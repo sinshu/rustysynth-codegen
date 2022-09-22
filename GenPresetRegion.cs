@@ -5,10 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-public static class GenInstrumentRegion
+public static class GenPresetRegion
 {
-    private static readonly string srcPath = "cs_instrument_region.txt";
-    private static readonly string dstPath = "rs_instrument_region.txt";
+    private static readonly string srcPath = "cs_preset_region.txt";
+    private static readonly string dstPath = "rs_preset_region.txt";
 
     private static readonly Regex regWordsInCamelCaseSymbol = new Regex(@"[A-Z][0-9a-z]*");
     private static readonly Regex regGeneratorType = new Regex(@"GeneratorType\.([0-9A-Za-z]+)");
@@ -46,17 +46,6 @@ public static class GenInstrumentRegion
                     return value + "_f32";
                 });
 
-                body = body.Replace("sample.StartLoop", "self.sample_start_loop");
-                body = body.Replace("sample.EndLoop", "self.sample_end_loop");
-                body = body.Replace("sample.Start", "self.sample_start");
-                body = body.Replace("sample.End", "self.sample_end");
-                body = body.Replace("sample.PitchCorrection", "self.sample_pitch_correction");
-
-                body = body.Replace("StartLoopAddressOffset", "self.get_start_loop_address_offset()");
-                body = body.Replace("EndLoopAddressOffset", "self.get_end_loop_address_offset()");
-                body = body.Replace("StartAddressOffset", "self.get_start_address_offset()");
-                body = body.Replace("EndAddressOffset", "self.get_end_address_offset()");
-
                 body = body.Replace("this[", "self.gs[");
 
                 if (info.Type == "float")
@@ -66,15 +55,6 @@ public static class GenInstrumentRegion
                 else
                 {
                     body = body.Replace("]", "] as i32");
-                }
-
-                if (info.Name == "SampleModes")
-                {
-                    body = "if self.gs[GeneratorType::SAMPLE_MODES as usize] != 2 { self.gs[GeneratorType::SAMPLE_MODES as usize] as i32 } else { LoopMode::NO_LOOP }";
-                }
-                else if (info.Name == "RootKey")
-                {
-                    body = "if self.gs[GeneratorType::OVERRIDING_ROOT_KEY as usize] != -1 { self.gs[GeneratorType::OVERRIDING_ROOT_KEY as usize] as i32 } else { self.sample_original_pitch }";
                 }
 
                 writer.WriteLine("        " + body);
