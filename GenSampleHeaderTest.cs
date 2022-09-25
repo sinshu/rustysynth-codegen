@@ -20,8 +20,8 @@ public static class GenSampleHeaderTest
                 var values = GetValues(header);
 
                 writer.WriteLine("    // " + header.Name);
-                writer.WriteLine("    let values: [i32; 7] = [" + String.Join(", ", values) + "];");
-                writer.WriteLine("    sample_util::check(&sf.sample_headers[" + sh + "], &values);");
+                writer.WriteLine("    let values: [i32; 7] = [" + string.Join(", ", values) + "];");
+                writer.WriteLine("    sample_util::check(&sf.get_sample_headers()[" + sh + "], &values);");
                 writer.WriteLine();
             }
         }
