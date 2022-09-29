@@ -23,7 +23,7 @@ public static class GenInstrumentRegion
             {
                 var info = new FuncInfo(line);
 
-                writer.WriteLine("    pub fn get_" + ToLowerSnake(info.Name) + "(&self) -> " + CsTypeToRustType(info.Type));
+                writer.WriteLine("    pub fn get" + info.Name + "(self: *const Self) " + CsTypeToRustType(info.Type));
                 writer.WriteLine("    {");
 
                 var body = info.Body.Replace(";", "");
@@ -31,53 +31,53 @@ public static class GenInstrumentRegion
                 body = regGeneratorType.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "GeneratorType::" + ToUpperSnake(value) + " as usize";
+                    return "GeneratorType." + ToUpperSnake(value);
                 });
 
                 body = regSoundFontMath.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "SoundFontMath::" + ToLowerSnake(value);
+                    return "SoundFontMath." + ToLowerCamel(value);
                 });
 
                 body = regFloatValue.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return value + "_f32";
+                    return value + "";
                 });
 
-                body = body.Replace("sample.StartLoop", "self.sample_start_loop");
-                body = body.Replace("sample.EndLoop", "self.sample_end_loop");
-                body = body.Replace("sample.Start", "self.sample_start");
-                body = body.Replace("sample.End", "self.sample_end");
-                body = body.Replace("sample.PitchCorrection", "self.sample_pitch_correction");
+                body = body.Replace("sample.StartLoop", "self.sample.start_loop");
+                body = body.Replace("sample.EndLoop", "self.sample.end_loop");
+                body = body.Replace("sample.Start", "self.sample.start");
+                body = body.Replace("sample.End", "self.sample.end");
+                body = body.Replace("sample.PitchCorrection", "self.sample.pitch_correction");
 
-                body = body.Replace("StartLoopAddressOffset", "self.get_start_loop_address_offset()");
-                body = body.Replace("EndLoopAddressOffset", "self.get_end_loop_address_offset()");
-                body = body.Replace("StartAddressOffset", "self.get_start_address_offset()");
-                body = body.Replace("EndAddressOffset", "self.get_end_address_offset()");
-
-                body = body.Replace("this[", "self.gs[");
+                body = body.Replace("StartLoopAddressOffset", "self.getStartLoopAddressOffset()");
+                body = body.Replace("EndLoopAddressOffset", "self.getEndLoopAddressOffset()");
+                body = body.Replace("StartAddressOffset", "self.getStartAddressOffset()");
+                body = body.Replace("EndAddressOffset", "self.getEndAddressOffset()");
 
                 if (info.Type == "float")
                 {
-                    body = body.Replace("]", "] as f32");
+                    body = body.Replace("this[", "@intToFloat(f32, self.gs[");
+                    body = body.Replace("]", "])");
                 }
                 else
                 {
-                    body = body.Replace("]", "] as i32");
+                    body = body.Replace("this[", "@intCast(i32, self.gs[");
+                    body = body.Replace("]", "])");
                 }
 
                 if (info.Name == "SampleModes")
                 {
-                    body = "if self.gs[GeneratorType::SAMPLE_MODES as usize] != 2 { self.gs[GeneratorType::SAMPLE_MODES as usize] as i32 } else { LoopMode::NO_LOOP }";
+                    body = "if (self.gs[GeneratorType.SAMPLE_MODES] != 2) self.gs[GeneratorType.SAMPLE_MODES] else LoopMode.NO_LOOP";
                 }
                 else if (info.Name == "RootKey")
                 {
-                    body = "if self.gs[GeneratorType::OVERRIDING_ROOT_KEY as usize] != -1 { self.gs[GeneratorType::OVERRIDING_ROOT_KEY as usize] as i32 } else { self.sample_original_pitch }";
+                    body = "if (self.gs[GeneratorType.OVERRIDING_ROOT_KEY] != -1) self.gs[GeneratorType.OVERRIDING_ROOT_KEY] else self.sample.original_pitch";
                 }
 
-                writer.WriteLine("        " + body);
+                writer.WriteLine("        return " + body + ";");
 
                 writer.WriteLine("    }");
                 writer.WriteLine();
@@ -102,19 +102,21 @@ public static class GenInstrumentRegion
         return sb.ToString();
     }
 
-    private static string ToLowerSnake(string value)
+    private static string ToLowerCamel(string value)
     {
         var matches = regWordsInCamelCaseSymbol.Matches(value);
 
         var sb = new StringBuilder();
         foreach (var match in matches.AsEnumerable())
         {
-            if (sb.Length > 0)
+            if (sb.Length == 0)
             {
-                sb.Append("_");
+                sb.Append(match.Value.ToLower());
             }
-
-            sb.Append(match.Value.ToLower());
+            else
+            {
+                sb.Append(match.Value);
+            }
         }
         return sb.ToString();
     }
