@@ -24,7 +24,7 @@ public static class GenRegionPair
             {
                 var info = new FuncInfo(line);
 
-                writer.WriteLine("    pub(crate) fn get_" + ToLowerSnake(info.Name) + "(&self) -> " + CsTypeToRustType(info.Type));
+                writer.WriteLine("    fn get" + info.Name + "(self: *const Self) " + CsTypeToRustType(info.Type));
                 writer.WriteLine("    {");
 
                 var body = info.Body.Replace(";", "");
@@ -32,44 +32,44 @@ public static class GenRegionPair
                 body = regGeneratorType.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "GeneratorType::" + ToUpperSnake(value) + " as usize";
+                    return "GeneratorType." + ToUpperSnake(value);
                 });
 
                 body = regInstrumentProperty.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "self.instrument.get_" + ToLowerSnake(value) + "()";
+                    return "self.instrument.get" + value + "()";
                 });
 
                 body = regSoundFontMath.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "SoundFontMath::" + ToLowerSnake(value);
+                    return "SoundFontMath." + ToLowerCamel(value);
                 });
 
                 body = regFloatValue.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return value + "_f32";
+                    return value + "";
                 });
-
-                body = body.Replace("this[", "self.gs(");
 
                 if (info.Type == "float")
                 {
-                    body = body.Replace("]", ") as f32");
+                    body = body.Replace("this[", "@intToFloat(f32, self.gs(");
+                    body = body.Replace("]", "))");
                 }
                 else
                 {
+                    body = body.Replace("this[", "self.gs(");
                     body = body.Replace("]", ")");
                 }
 
                 if (info.Name == "FineTune")
                 {
-                    body = "self.gs(GeneratorType::FINE_TUNE as usize) + self.instrument.sample_pitch_correction";
+                    body = "self.gs(GeneratorType.FINE_TUNE) + self.instrument.sample.pitch_correction";
                 }
 
-                writer.WriteLine("        " + body);
+                writer.WriteLine("        return " + body + ";");
 
                 writer.WriteLine("    }");
                 writer.WriteLine();
@@ -94,19 +94,21 @@ public static class GenRegionPair
         return sb.ToString();
     }
 
-    private static string ToLowerSnake(string value)
+    private static string ToLowerCamel(string value)
     {
         var matches = regWordsInCamelCaseSymbol.Matches(value);
 
         var sb = new StringBuilder();
         foreach (var match in matches.AsEnumerable())
         {
-            if (sb.Length > 0)
+            if (sb.Length == 0)
             {
-                sb.Append("_");
+                sb.Append(match.Value.ToLower());
             }
-
-            sb.Append(match.Value.ToLower());
+            else
+            {
+                sb.Append(match.Value);
+            }
         }
         return sb.ToString();
     }
