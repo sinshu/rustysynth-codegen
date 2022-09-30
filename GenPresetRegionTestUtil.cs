@@ -22,9 +22,14 @@ public static class GenPresetRegionTestUtil
             {
                 var info = new FuncInfo(line);
 
-                var rsValue = "region.get_" + ToLowerSnake(info.Name) + "()";
+                var rsValue = "region.get" + info.Name + "()";
 
-                writer.WriteLine("        assert!(are_equal(" + rsValue + " as f64, values[" + index + "]));");
+                if (info.Type != "float")
+                {
+                    rsValue = "@intToFloat(f64, " + rsValue + ")";
+                }
+
+                writer.WriteLine("    debug.assert(areEqual(" + rsValue + ", values[" + index + "]));");
 
                 index++;
             }

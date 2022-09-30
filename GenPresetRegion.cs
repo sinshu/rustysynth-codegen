@@ -23,7 +23,7 @@ public static class GenPresetRegion
             {
                 var info = new FuncInfo(line);
 
-                writer.WriteLine("    pub fn get_" + ToLowerSnake(info.Name) + "(&self) -> " + CsTypeToRustType(info.Type));
+                writer.WriteLine("    pub fn get" + info.Name + "(self: *const Self) " + CsTypeToRustType(info.Type));
                 writer.WriteLine("    {");
 
                 var body = info.Body.Replace(";", "");
@@ -31,33 +31,33 @@ public static class GenPresetRegion
                 body = regGeneratorType.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "GeneratorType::" + ToUpperSnake(value) + " as usize";
+                    return "GeneratorType." + ToUpperSnake(value);
                 });
 
                 body = regSoundFontMath.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "SoundFontMath::" + ToLowerSnake(value);
+                    return "SoundFontMath." + ToLowerCamel(value);
                 });
 
                 body = regFloatValue.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return value + "_f32";
+                    return value + "";
                 });
-
-                body = body.Replace("this[", "self.gs[");
 
                 if (info.Type == "float")
                 {
-                    body = body.Replace("]", "] as f32");
+                    body = body.Replace("this[", "@intToFloat(f32, self.gs[");
+                    body = body.Replace("]", "])");
                 }
                 else
                 {
-                    body = body.Replace("]", "] as i32");
+                    body = body.Replace("this[", "@intCast(i32, self.gs[");
+                    body = body.Replace("]", "])");
                 }
 
-                writer.WriteLine("        " + body);
+                writer.WriteLine("        return " + body + ";");
 
                 writer.WriteLine("    }");
                 writer.WriteLine();
@@ -82,19 +82,21 @@ public static class GenPresetRegion
         return sb.ToString();
     }
 
-    private static string ToLowerSnake(string value)
+    private static string ToLowerCamel(string value)
     {
         var matches = regWordsInCamelCaseSymbol.Matches(value);
 
         var sb = new StringBuilder();
         foreach (var match in matches.AsEnumerable())
         {
-            if (sb.Length > 0)
+            if (sb.Length == 0)
             {
-                sb.Append("_");
+                sb.Append(match.Value.ToLower());
             }
-
-            sb.Append(match.Value.ToLower());
+            else
+            {
+                sb.Append(match.Value);
+            }
         }
         return sb.ToString();
     }
