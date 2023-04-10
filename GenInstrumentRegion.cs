@@ -42,7 +42,7 @@ public static class GenInstrumentRegion
                 body = regFloatValue.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "f32(" + value + ")";
+                    return value;
                 });
 
                 body = body.Replace("sample.StartLoop", "ir.sample.start_loop");
