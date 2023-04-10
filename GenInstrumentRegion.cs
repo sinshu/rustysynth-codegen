@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 public static class GenInstrumentRegion
 {
     private static readonly string srcPath = "cs_instrument_region.txt";
-    private static readonly string dstPath = "rs_instrument_region.txt";
+    private static readonly string dstPath = "odin_instrument_region.txt";
 
     private static readonly Regex regWordsInCamelCaseSymbol = new Regex(@"[A-Z][0-9a-z]*");
     private static readonly Regex regGeneratorType = new Regex(@"GeneratorType\.([0-9A-Za-z]+)");
@@ -23,66 +23,89 @@ public static class GenInstrumentRegion
             {
                 var info = new FuncInfo(line);
 
-                writer.WriteLine("    pub fn get_" + ToLowerSnake(info.Name) + "(&self) -> " + CsTypeToRustType(info.Type));
-                writer.WriteLine("    {");
+                writer.WriteLine("instrument_get_" + ToLowerSnake(info.Name) + " :: proc(ir: ^Instrument_Region) -> " + CsTypeToRustType(info.Type) + " {");
 
                 var body = info.Body.Replace(";", "");
 
                 body = regGeneratorType.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "GeneratorType::" + ToUpperSnake(value) + " as usize";
+                    return "Generator_Type." + ToOdin(value);
                 });
 
                 body = regSoundFontMath.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "SoundFontMath::" + ToLowerSnake(value);
+                    return ToLowerSnake(value);
                 });
 
                 body = regFloatValue.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return value + "_f32";
+                    return "f32(" + value + ")";
                 });
 
-                body = body.Replace("sample.StartLoop", "self.sample_start_loop");
-                body = body.Replace("sample.EndLoop", "self.sample_end_loop");
-                body = body.Replace("sample.Start", "self.sample_start");
-                body = body.Replace("sample.End", "self.sample_end");
-                body = body.Replace("sample.PitchCorrection", "self.sample_pitch_correction");
+                body = body.Replace("sample.StartLoop", "ir.sample.start_loop");
+                body = body.Replace("sample.EndLoop", "ir.sample.end_loop");
+                body = body.Replace("sample.Start", "ir.sample.start");
+                body = body.Replace("sample.End", "ir.sample.end");
+                body = body.Replace("sample.PitchCorrection", "ir.sample.pitch_correction");
 
-                body = body.Replace("StartLoopAddressOffset", "self.get_start_loop_address_offset()");
-                body = body.Replace("EndLoopAddressOffset", "self.get_end_loop_address_offset()");
-                body = body.Replace("StartAddressOffset", "self.get_start_address_offset()");
-                body = body.Replace("EndAddressOffset", "self.get_end_address_offset()");
+                body = body.Replace("StartLoopAddressOffset", "instrument_get_start_loop_address_offset(ir)");
+                body = body.Replace("EndLoopAddressOffset", "instrument_get_end_loop_address_offset(ir)");
+                body = body.Replace("StartAddressOffset", "instrument_get_start_address_offset(ir)");
+                body = body.Replace("EndAddressOffset", "instrument_get_end_address_offset(ir)");
 
-                body = body.Replace("this[", "self.gs[");
+                body = body.Replace("this[", "ir.gs[");
 
                 if (info.Type == "float")
                 {
-                    body = body.Replace("]", "] as f32");
+                    body = body.Replace("ir.gs[", "f32(ir.gs[");
+                    body = body.Replace("]", "])");
                 }
                 else
                 {
-                    body = body.Replace("]", "] as i32");
+                    body = body.Replace("ir.gs[", "i32(ir.gs[");
+                    body = body.Replace("]", "])");
                 }
 
-                if (info.Name == "SampleModes")
+                if (info.Name == "FineTune")
                 {
-                    body = "if self.gs[GeneratorType::SAMPLE_MODES as usize] != 2 { self.gs[GeneratorType::SAMPLE_MODES as usize] as i32 } else { LoopMode::NO_LOOP }";
+                    body = "i32(ir.gs[Generator_Type.Fine_Tune]) + i32(ir.sample.pitch_correction)";
+                }
+                else if (info.Name == "SampleModes")
+                {
+                    body = "ir.gs[Generator_Type.Sample_Modes] != 2 ? i32(ir.gs[Generator_Type.Sample_Modes]) : i32(Loop_Mode.No_Loop)";
                 }
                 else if (info.Name == "RootKey")
                 {
-                    body = "if self.gs[GeneratorType::OVERRIDING_ROOT_KEY as usize] != -1 { self.gs[GeneratorType::OVERRIDING_ROOT_KEY as usize] as i32 } else { self.sample_original_pitch }";
+                    body = "ir.gs[Generator_Type.Overriding_Root_Key] != -1 ? i32(ir.gs[Generator_Type.Overriding_Root_Key]) : i32(ir.sample.original_pitch)";
                 }
 
-                writer.WriteLine("        " + body);
+                writer.WriteLine("    return " + body);
 
-                writer.WriteLine("    }");
+                writer.WriteLine("}");
                 writer.WriteLine();
             }
         }
+    }
+
+    private static string ToOdin(string value)
+    {
+        var matches = regWordsInCamelCaseSymbol.Matches(value);
+
+        var sb = new StringBuilder();
+        foreach (var match in matches.AsEnumerable())
+        {
+            if (sb.Length > 0)
+            {
+                sb.Append("_");
+            }
+
+            sb.Append(match.Value);
+        }
+        sb.Replace("I_D", "ID");
+        return sb.ToString();
     }
 
     private static string ToUpperSnake(string value)

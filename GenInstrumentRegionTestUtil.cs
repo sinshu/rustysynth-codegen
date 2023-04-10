@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 public static class GenInstrumentRegionTestUtil
 {
     private static readonly string srcPath = "cs_instrument_region.txt";
-    private static readonly string dstPath = "rs_instrument_region_test_util.txt";
+    private static readonly string dstPath = "odin_instrument_region_test_util.txt";
 
     private static readonly Regex regWordsInCamelCaseSymbol = new Regex(@"[A-Z][0-9a-z]*");
 

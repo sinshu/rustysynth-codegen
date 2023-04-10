@@ -1,8 +1,11 @@
-﻿GenInstrumentRegion.Run();
+﻿GenGeneratorType.Run();
+GenInstrumentRegion.Run();
 GenInstrumentRegionTestUtil.Run();
 GenPresetRegion.Run();
 GenPresetRegionTestUtil.Run();
 GenRegionPair.Run();
+
+return;
 
 GenInstrumentRegionTest.Run(
     @"C:\Users\sinsh\Desktop\sf2\TimGM6mb.sf2",
