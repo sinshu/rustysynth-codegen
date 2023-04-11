@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 public static class GenPresetRegionTestUtil
 {
     private static readonly string srcPath = "cs_preset_region.txt";
-    private static readonly string dstPath = "rs_preset_region_test_util.txt";
+    private static readonly string dstPath = "odin_preset_region_test_util.txt";
 
     private static readonly Regex regWordsInCamelCaseSymbol = new Regex(@"[A-Z][0-9a-z]*");
 
@@ -22,9 +22,9 @@ public static class GenPresetRegionTestUtil
             {
                 var info = new FuncInfo(line);
 
-                var rsValue = "region.get_" + ToLowerSnake(info.Name) + "()";
+                var rsValue = "odinysynth.preset_get_" + ToLowerSnake(info.Name) + "(pr)";
 
-                writer.WriteLine("        assert!(are_equal(" + rsValue + " as f64, values[" + index + "]));");
+                writer.WriteLine("    are_equal(t, f64(" + rsValue + "), values[" + index + "]);");
 
                 index++;
             }

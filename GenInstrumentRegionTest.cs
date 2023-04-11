@@ -27,8 +27,8 @@ public static class GenInstrumentRegionTest
                     var region = instrument.Regions[reg];
 
                     var values = GetValues(region);
-                    writer.WriteLine("    let values: [f64; 50] = [" + string.Join(", ", values.Select(x => Format(x) + "_f64")) + "];");
-                    writer.WriteLine("    instrument_util::check(&sf.get_instruments()[" + inst + "].get_regions()[" + reg + "], &values);");
+                    writer.WriteLine("    values = {" + string.Join(", ", values.Select(x => Format(x))) + "}");
+                    writer.WriteLine("    check_instrument_region(t, &sf.instruments[" + inst + "].regions[" + reg + "], values[:])");
                 }
 
                 writer.WriteLine();

@@ -27,8 +27,8 @@ public static class GenPresetRegionTest
                     var region = preset.Regions[reg];
 
                     var values = GetValues(region);
-                    writer.WriteLine("    let values: [f64; 39] = [" + string.Join(", ", values.Select(x => Format(x) + "_f64")) + "];");
-                    writer.WriteLine("    preset_util::check(&sf.get_presets()[" + pre + "].get_regions()[" + reg + "], &values);");
+                    writer.WriteLine("    values = {" + string.Join(", ", values.Select(x => Format(x))) + "}");
+                    writer.WriteLine("    check_preset_region(t, &sf.presets[" + pre + "].regions[" + reg + "], values[:])");
                 }
 
                 writer.WriteLine();

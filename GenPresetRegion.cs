@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 public static class GenPresetRegion
 {
     private static readonly string srcPath = "cs_preset_region.txt";
-    private static readonly string dstPath = "rs_preset_region.txt";
+    private static readonly string dstPath = "odin_preset_region.txt";
 
     private static readonly Regex regWordsInCamelCaseSymbol = new Regex(@"[A-Z][0-9a-z]*");
     private static readonly Regex regGeneratorType = new Regex(@"GeneratorType\.([0-9A-Za-z]+)");
@@ -23,46 +23,65 @@ public static class GenPresetRegion
             {
                 var info = new FuncInfo(line);
 
-                writer.WriteLine("    pub fn get_" + ToLowerSnake(info.Name) + "(&self) -> " + CsTypeToRustType(info.Type));
-                writer.WriteLine("    {");
+                writer.WriteLine("preset_get_" + ToLowerSnake(info.Name) + " :: proc(pr: ^Preset_Region) -> " + CsTypeToRustType(info.Type) + " {");
 
                 var body = info.Body.Replace(";", "");
 
                 body = regGeneratorType.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "GeneratorType::" + ToUpperSnake(value) + " as usize";
+                    return "Generator_Type." + ToOdin(value);
                 });
 
                 body = regSoundFontMath.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return "SoundFontMath::" + ToLowerSnake(value);
+                    return ToLowerSnake(value);
                 });
 
                 body = regFloatValue.Replace(body, match =>
                 {
                     var value = match.Groups[1].Value;
-                    return value + "_f32";
+                    return value;
                 });
 
-                body = body.Replace("this[", "self.gs[");
+                body = body.Replace("this[", "pr.gs[");
 
                 if (info.Type == "float")
                 {
-                    body = body.Replace("]", "] as f32");
+                    body = body.Replace("pr.gs[", "f32(pr.gs[");
+                    body = body.Replace("]", "])");
                 }
                 else
                 {
-                    body = body.Replace("]", "] as i32");
+                    body = body.Replace("pr.gs[", "i32(pr.gs[");
+                    body = body.Replace("]", "])");
                 }
 
-                writer.WriteLine("        " + body);
+                writer.WriteLine("    return " + body);
 
-                writer.WriteLine("    }");
+                writer.WriteLine("}");
                 writer.WriteLine();
             }
         }
+    }
+
+    private static string ToOdin(string value)
+    {
+        var matches = regWordsInCamelCaseSymbol.Matches(value);
+
+        var sb = new StringBuilder();
+        foreach (var match in matches.AsEnumerable())
+        {
+            if (sb.Length > 0)
+            {
+                sb.Append("_");
+            }
+
+            sb.Append(match.Value);
+        }
+        sb.Replace("I_D", "ID");
+        return sb.ToString();
     }
 
     private static string ToUpperSnake(string value)

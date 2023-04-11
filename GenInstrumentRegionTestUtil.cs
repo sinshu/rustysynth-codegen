@@ -22,9 +22,9 @@ public static class GenInstrumentRegionTestUtil
             {
                 var info = new FuncInfo(line);
 
-                var rsValue = "region.get_" + ToLowerSnake(info.Name) + "()";
+                var rsValue = "odinysynth.instrument_get_" + ToLowerSnake(info.Name) + "(ir)";
 
-                writer.WriteLine("        assert!(are_equal(" + rsValue + " as f64, values[" + index + "]));");
+                writer.WriteLine("    are_equal(t, f64(" + rsValue + "), values[" + index + "]);");
 
                 index++;
             }
